@@ -1,6 +1,7 @@
 # Carbon Tracker — Frontend (Vite + React)
 
-This is a beginner-friendly frontend application (local-only) that helps you track simple carbon emissions for trips and home energy. It includes:
+This is a beginner-friendly frontend application 
+ that helps you track simple carbon emissions for trips and home energy. It includes:
 
  Trip calculator (car, train, flight) and extended options (bike, walk, flight class, long-haul)
 
