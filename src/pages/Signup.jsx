@@ -2,27 +2,74 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
-export default function Signup(){
+export default function Signup() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const auth = useAuth()
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
+  const { signup } = useAuth()
   const nav = useNavigate()
 
-  function submit(e){
+  async function submit(e) {
     e.preventDefault()
-    auth.signup({ name, email, password })
-    nav('/')
+    setSubmitting(true)
+    setErrorMsg('')
+
+    const { error } = await signup({ name, email, password })
+
+    setSubmitting(false)
+
+    if (error) {
+      setErrorMsg(error.message || 'Signup failed')
+      return
+    }
+
+    // Supabase usually sends a verification email
+    alert('Account created. Please check your email to verify your account.')
+    nav('/login')
   }
 
   return (
-    <div className="card" style={{maxWidth:520, margin:'20px auto'}}>
+    <div className="card" style={{ maxWidth: 520, margin: '20px auto' }}>
       <h3>Create account</h3>
       <form onSubmit={submit}>
-        <div className="form-row"><input placeholder="Full name" value={name} onChange={e=>setName(e.target.value)} /></div>
-        <div className="form-row"><input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} /></div>
-        <div className="form-row"><input placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} /></div>
-        <button className="btn">Sign Up</button>
+        <div className="form-row">
+          <input
+            placeholder="Full name"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            required
+          />
+        </div>
+        <div className="form-row">
+          <input
+            placeholder="Email"
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            required
+          />
+        </div>
+        <div className="form-row">
+          <input
+            placeholder="Password"
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        {errorMsg && (
+          <div className="error" style={{ color: 'red', marginBottom: 8 }}>
+            {errorMsg}
+          </div>
+        )}
+
+        <button className="btn" disabled={submitting}>
+          {submitting ? 'Creating account...' : 'Sign Up'}
+        </button>
       </form>
     </div>
   )

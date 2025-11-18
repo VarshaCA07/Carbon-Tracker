@@ -12,32 +12,93 @@ import Settings from './pages/Settings'
 import { loadHistory, saveHistory } from './utils/storage'
 import { useAuth } from './contexts/AuthContext'
 
-function PrivateRoute({ children }){
-  const { user } = useAuth()
-  if(!user) return <Navigate to="/login" replace />
+function PrivateRoute({ children }) {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="container" style={{ padding: 24 }}>
+        Loading...
+      </div>
+    )
+  }
+
+  if (!user) return <Navigate to="/login" replace />
   return children
 }
 
-export default function App(){
+export default function App() {
   const [history, setHistory] = useState([])
 
-  useEffect(()=>{ setHistory(loadHistory()) }, [])
-  useEffect(()=>{ saveHistory(history) }, [history])
+  useEffect(() => {
+    setHistory(loadHistory())
+  }, [])
 
-  function addEntry(entry){ setHistory(prev => [entry, ...prev].slice(0, 500)) }
-  function updateEntry(idx, entry){ setHistory(prev => prev.map((p,i)=> i===idx ? entry : p)) }
-  function deleteEntry(idx){ setHistory(prev => prev.filter((_,i)=>i!==idx)) }
+  useEffect(() => {
+    saveHistory(history)
+  }, [history])
+
+  function addEntry(entry) {
+    setHistory(prev => [entry, ...prev].slice(0, 500))
+  }
+
+  function updateEntry(idx, entry) {
+    setHistory(prev => prev.map((p, i) => (i === idx ? entry : p)))
+  }
+
+  function deleteEntry(idx) {
+    setHistory(prev => prev.filter((_, i) => i !== idx))
+  }
 
   return (
     <div className="app">
       <Header />
       <main className="container">
         <Routes>
-          <Route path="/" element={<PrivateRoute><Dashboard history={history} /></PrivateRoute>} />
-          <Route path="/calculator" element={<PrivateRoute><CalculatorPage onAdd={addEntry} /></PrivateRoute>} />
-          <Route path="/history" element={<PrivateRoute><HistoryPage history={history} onEdit={updateEntry} onDelete={deleteEntry} /></PrivateRoute>} />
-          <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-          <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+          <Route
+            path="/"
+            element={
+              <PrivateRoute>
+                <Dashboard history={history} />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/calculator"
+            element={
+              <PrivateRoute>
+                <CalculatorPage onAdd={addEntry} />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <PrivateRoute>
+                <HistoryPage
+                  history={history}
+                  onEdit={updateEntry}
+                  onDelete={deleteEntry}
+                />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <Profile />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <PrivateRoute>
+                <Settings />
+              </PrivateRoute>
+            }
+          />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
         </Routes>

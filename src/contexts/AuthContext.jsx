@@ -1,36 +1,96 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+// src/contexts/AuthContext.jsx
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { supabase } from "../utils/supabaseClient";
 
-const KEY = 'ct_user_v1'
-const AuthContext = createContext(null)
+const AuthContext = createContext(null);
 
-export function AuthProvider({ children }){
-  const [user, setUser] = useState(null)
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(()=>{
-    try{ const raw = localStorage.getItem(KEY); if(raw) setUser(JSON.parse(raw)) }catch(e){}
-  },[])
+  useEffect(() => {
+    const initAuth = async () => {
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
 
-  function signup({ name, email, password }){
-    const u = { id: Date.now(), name, email }
-    localStorage.setItem(KEY, JSON.stringify(u))
-    setUser(u)
-    return u
+      if (error) {
+        console.error("Error getting session:", error);
+      }
+
+      setUser(session?.user ?? null);
+      setLoading(false);
+    };
+
+    initAuth();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  async function signup({ name, email, password }) {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name } },
+    });
+
+    if (error) {
+      console.error("Signup error:", error);
+      return { user: null, error };
+    }
+
+    const newUser = data.user ?? null;
+    setUser(newUser);
+    return { user: newUser, error: null };
   }
 
-  function login({ email, password }){
-    // mock login: accept any credentials if user exists or create one
-    const raw = localStorage.getItem(KEY)
-    if(raw){ const u = JSON.parse(raw); setUser(u); return u }
-    return signup({ name: 'User', email, password })
+  async function login({ email, password }) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      console.error("Login error:", error);
+      return { user: null, error };
+    }
+
+    const loggedUser = data.user ?? null;
+    setUser(loggedUser);
+    return { user: loggedUser, error: null };
   }
 
-  function logout(){ localStorage.removeItem(KEY); setUser(null) }
+  async function logout() {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Logout error:", error);
+    }
+    setUser(null);
+  }
 
   return (
-    <AuthContext.Provider value={{user, signup, login, logout}}>
+    <AuthContext.Provider
+      value={{ user, loading, signup, login, logout }}
+    >
       {children}
     </AuthContext.Provider>
-  )
+  );
 }
 
-export function useAuth(){ return useContext(AuthContext) }
+export function useAuth() {
+  return useContext(AuthContext);
+}
